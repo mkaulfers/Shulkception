@@ -1,0 +1,7 @@
+name: Shulkception
+version: '${project.version}'
+main: com.xtwistedx.shulkception.shulkception.ShulkceptionPlugin
+api-version: 1.19
+authors: [ xTwisteDx ]
+description: A plugin for Spigot/Paper designed to allow your users the ability to open a shulker box, in inventory, without having to place it on the ground.
+website: https://github.com/mkaulfers
