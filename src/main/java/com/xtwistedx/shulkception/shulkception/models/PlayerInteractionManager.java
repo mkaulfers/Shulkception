@@ -58,14 +58,6 @@ public class PlayerInteractionManager {
         new BukkitRunnable() {
             @Override
             public void run() {
-                //Send the player a message with the count of items that are not air or null
-                int count = 0;
-                for (ItemStack item : trackedShulkerBox.getInventory().getContents()) {
-                    if (item == null || item.getType() == Material.AIR) continue;
-                    count++;
-                }
-                player.sendMessage(ChatColor.GREEN + "You have " + count + " items in your shulker box.");
-
                 ItemStack[] playerInventoryContents = player.getInventory().getContents();
                 ItemStack shulkerItem = null;
 
@@ -87,12 +79,13 @@ public class PlayerInteractionManager {
                         shulkerItem = item;
                         break;
                     }
+
+                    if (item == playerInventoryContents[playerInventoryContents.length - 1]) {
+                        trackedShulkerBoxPersistentDataContainer.remove(InventoryEvents.getNameSpacedKey());
+                    }
                 }
 
-                if (shulkerItem == null) {
-                    player.sendMessage(ChatColor.RED + "Something went wrong, please try again. (ERROR: shulkerItem is null.)");
-                    return;
-                }
+                if (shulkerItem == null) return;
 
                 BlockStateMeta shulkerMeta = (BlockStateMeta) shulkerItem.getItemMeta();
 
