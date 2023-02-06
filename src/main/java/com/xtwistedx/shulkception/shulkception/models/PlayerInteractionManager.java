@@ -4,6 +4,7 @@ import com.xtwistedx.shulkception.shulkception.ShulkceptionPlugin;
 import com.xtwistedx.shulkception.shulkception.events.InventoryEvents;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.block.ShulkerBox;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -29,6 +30,7 @@ public class PlayerInteractionManager {
             @Override
             public void run() {
                 player.openInventory(trackedShulkerBox.getInventory());
+                player.playSound(player.getLocation(), Sound.BLOCK_SHULKER_BOX_OPEN, 1, 1);
             }
         }.runTask(ShulkceptionPlugin.getPlugin());
     }
@@ -58,6 +60,8 @@ public class PlayerInteractionManager {
         new BukkitRunnable() {
             @Override
             public void run() {
+                if (trackedShulkerBox == null) return;
+
                 ItemStack[] playerInventoryContents = player.getInventory().getContents();
                 ItemStack shulkerItem = null;
 
@@ -79,10 +83,6 @@ public class PlayerInteractionManager {
                         shulkerItem = item;
                         break;
                     }
-
-                    if (item == playerInventoryContents[playerInventoryContents.length - 1]) {
-                        trackedShulkerBoxPersistentDataContainer.remove(InventoryEvents.getNameSpacedKey());
-                    }
                 }
 
                 if (shulkerItem == null) return;
@@ -102,6 +102,8 @@ public class PlayerInteractionManager {
 
                 shulkerMeta.setBlockState(shulkerBox);
                 shulkerItem.setItemMeta(shulkerMeta);
+
+                player.playSound(player.getLocation(), Sound.BLOCK_SHULKER_BOX_CLOSE, 1, 1);
             }
         }.runTask(ShulkceptionPlugin.getPlugin());
     }

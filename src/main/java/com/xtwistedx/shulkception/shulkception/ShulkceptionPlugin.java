@@ -1,6 +1,5 @@
 package com.xtwistedx.shulkception.shulkception;
 import com.xtwistedx.shulkception.shulkception.events.InventoryEvents;
-import com.xtwistedx.shulkception.shulkception.managers.ConfigManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class ShulkceptionPlugin extends JavaPlugin {
