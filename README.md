@@ -1,4 +1,4 @@
-<img src='https://imgur.com/RjqWd3F'/>
+<img src='https://imgur.com/RjqWd3F.png'/>
 
 Open shulkers, from your inventory, simple.
 
