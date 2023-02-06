@@ -5,6 +5,7 @@ import com.xtwistedx.shulkception.shulkception.models.PlayerInteractionManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.ShulkerBox;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -17,6 +18,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 public class InventoryEvents implements Listener {
@@ -31,9 +33,9 @@ public class InventoryEvents implements Listener {
      */
     HashMap<UUID, PlayerInteractionManager> playerInteractions = new HashMap<>();
 
-    //MARK: - Events
     /**
      * Handles the event when a player opens a shulker box.
+     *
      * @param e - The inventory open event.
      */
     @EventHandler
@@ -46,7 +48,14 @@ public class InventoryEvents implements Listener {
             return;
         }
 
-        ItemClickType itemClickType = getShulkerClickType(player, e);
+        ItemClickType itemClickType = getShulkerClickType(e);
+
+        if (itemClickType == null && playerInteractions.containsKey(player.getUniqueId())) {
+            e.setCancelled(true);
+            return;
+        }
+
+        if (itemClickType == null) return;
 
         switch (itemClickType) {
             case OTHER:
@@ -66,6 +75,7 @@ public class InventoryEvents implements Listener {
 
     /**
      * Handles the event when a player closes a shulker box.
+     *
      * @param e - The inventory close event.
      */
     @EventHandler
@@ -76,6 +86,8 @@ public class InventoryEvents implements Listener {
 
         Inventory inventory = e.getInventory();
         if (!inventory.getType().equals(InventoryType.SHULKER_BOX)) return;
+        if (inventory.getHolder() instanceof BlockState && ((BlockState) inventory.getHolder()).getType().equals(Material.SHULKER_BOX))
+            return;
 
         playerInteraction.performCloseTask();
         playerInteractions.remove(player.getUniqueId());
@@ -93,69 +105,42 @@ public class InventoryEvents implements Listener {
         playerInteraction.performUpdateTask();
     }
 
-    //MARK: - Private Event Handlers
-
-    //TODO: - Add support for opening shulkers from the top inventory in containers, such as chests, hoppers, barrels, etc..
-//    private void handleShulkerClickTop(InventoryClickEvent e, Player player, ClickType clickType, ItemStack clickedItem) {
-//     if (clickType == ClickType.SHIFT_RIGHT) {
-//         if (playerInteractions.containsKey(player.getUniqueId())) {
-//             e.setCancelled(true);
-//             return;
-//         }
-//
-//         ShulkerBox shulkerBox = (ShulkerBox) ((BlockStateMeta) Objects.requireNonNull(clickedItem.getItemMeta())).getBlockState();
-//
-//         String uuid = UUID.randomUUID().toString();
-//         PersistentDataContainer data = shulkerBox.getPersistentDataContainer();
-//         data.set(getNameSpacedKey(), PersistentDataType.STRING, uuid);
-//
-//         ItemMeta shulkerMeta = clickedItem.getItemMeta();
-//         PersistentDataContainer itemData = shulkerMeta.getPersistentDataContainer();
-//         itemData.set(getNameSpacedKey(), PersistentDataType.STRING, uuid);
-//         clickedItem.setItemMeta(shulkerMeta);
-//
-//         PlayerInteractionManager playerInteraction = new PlayerInteractionManager(player, shulkerBox, e.getSlot());
-//     }
-// }
-
     /**
      * Handles allowing the opening of a shulker box from the lower inventory. This is done by creating a new shulker box.
-     * @param e - The inventory click event.
-     * @param player - The player who clicked the shulker box.
-     * @param clickType - The type of click. (EX: SHIFT_RIGHT)
+     *
+     * @param e           - The inventory click event.
+     * @param player      - The player who clicked the shulker box.
+     * @param clickType   - The type of click. (EX: SHIFT_RIGHT)
      * @param clickedItem - The item that was clicked.
      */
     private void handleShulkerClickBottom(InventoryClickEvent e, Player player, ClickType clickType, ItemStack clickedItem) {
-        if (clickType == ClickType.SHIFT_RIGHT) {
-            if (playerInteractions.containsKey(player.getUniqueId())) {
-                e.setCancelled(true);
-                return;
-            }
-
-            ShulkerBox shulkerBox = (ShulkerBox) ((BlockStateMeta) Objects.requireNonNull(clickedItem.getItemMeta())).getBlockState();
-
-            String uuid = UUID.randomUUID().toString();
-            PersistentDataContainer data = shulkerBox.getPersistentDataContainer();
-            data.set(getNameSpacedKey(), PersistentDataType.STRING, uuid);
-
-            ItemMeta shulkerMeta = clickedItem.getItemMeta();
-            PersistentDataContainer itemData = shulkerMeta.getPersistentDataContainer();
-            itemData.set(getNameSpacedKey(), PersistentDataType.STRING, uuid);
-            clickedItem.setItemMeta(shulkerMeta);
-
-            PlayerInteractionManager playerInteraction = new PlayerInteractionManager(player, shulkerBox, e.getSlot());
-
-            playerInteraction.performOpenTask();
+        if (playerInteractions.containsKey(player.getUniqueId())) {
             e.setCancelled(true);
-
-            playerInteractions.put(player.getUniqueId(), playerInteraction);
-        } else if (playerInteractions.containsKey(player.getUniqueId())) {
-            e.setCancelled(true);
+            return;
         }
+
+        ShulkerBox shulkerBox = (ShulkerBox) ((BlockStateMeta) Objects.requireNonNull(clickedItem.getItemMeta())).getBlockState();
+
+        String uuid = UUID.randomUUID().toString();
+        PersistentDataContainer data = shulkerBox.getPersistentDataContainer();
+        data.set(getNameSpacedKey(), PersistentDataType.STRING, uuid);
+
+        ItemMeta shulkerMeta = clickedItem.getItemMeta();
+        PersistentDataContainer itemData = shulkerMeta.getPersistentDataContainer();
+        itemData.set(getNameSpacedKey(), PersistentDataType.STRING, uuid);
+        clickedItem.setItemMeta(shulkerMeta);
+
+        PlayerInteractionManager playerInteraction = new PlayerInteractionManager(player, shulkerBox, e.getSlot());
+
+        playerInteraction.performOpenTask();
+        e.setCancelled(true);
+
+        playerInteractions.put(player.getUniqueId(), playerInteraction);
     }
 
     /**
      * Allows the user to interact with other items as normal, however updates the tracked player interaction event.
+     *
      * @param player - The player who clicked the shulker box.
      */
     private void handleOtherItemClick(Player player) {
@@ -166,8 +151,9 @@ public class InventoryEvents implements Listener {
 
     /**
      * Handles the event when a player drops an item from their inventory. If the item is a shulker box, it will be cancelled, while they have a shulker box open.
-     * @param e - The inventory click event.
-     * @param player - The player who clicked the shulker box.
+     *
+     * @param e           - The inventory click event.
+     * @param player      - The player who clicked the shulker box.
      * @param clickedItem - The item that was clicked.
      */
     private void handleDropItemClick(InventoryClickEvent e, Player player, ItemStack clickedItem) {
@@ -176,15 +162,15 @@ public class InventoryEvents implements Listener {
         }
     }
 
-    //MARK: - Utility Methods
-
     /**
      * Gets a NamespacedKey for a persistent container related to this plugin.
+     *
      * @return - The NamespacedKey for this plugin.
      */
     public static NamespacedKey getNameSpacedKey() {
         return new NamespacedKey(ShulkceptionPlugin.getPlugin(), SHULKER_BOX_KEY);
     }
+
     private boolean isShulkerBox(Material m) {
         switch (m) {
             case SHULKER_BOX:
@@ -214,7 +200,7 @@ public class InventoryEvents implements Listener {
      * @param e InventoryClickEvent
      * @return ItemClickType - Represents either a shulker box click top/bottom or other. If the item is not a shulker box, it will return OTHER.
      */
-    private ItemClickType getShulkerClickType(Player player, InventoryClickEvent e) {
+    private @Nullable ItemClickType getShulkerClickType(InventoryClickEvent e) {
         if (e.getClick().equals(ClickType.DROP)) return ItemClickType.DROP;
 
         int topSize = e.getView().getTopInventory().getSize();
@@ -224,25 +210,21 @@ public class InventoryEvents implements Listener {
         if (item == null) return ItemClickType.OTHER;
         Material itemType = e.getCurrentItem().getType();
 
-        if ((!isShulkerBox(itemType) || e.getClick() != ClickType.SHIFT_RIGHT) && shouldAllowShulkerInteraction(player)) return ItemClickType.OTHER;
-        if (topSize <= 5 && isShulkerBox(itemType) || (slot >= topSize && isShulkerBox(itemType))) return ItemClickType.SHULKER_CLICK_BOTTOM;
-        return ItemClickType.SHULKER_CLICK_TOP;
+        if ((topSize <= 5 && isShulkerBox(itemType) || (slot >= topSize && isShulkerBox(itemType))) && e.getClick().equals(ClickType.SHIFT_RIGHT))
+            return ItemClickType.SHULKER_CLICK_BOTTOM;
+
+        if ((slot < topSize && isShulkerBox(itemType)) && e.getClick().equals(ClickType.SHIFT_RIGHT))
+            return ItemClickType.SHULKER_CLICK_TOP;
+
+        if (!isShulkerBox(itemType)) return ItemClickType.OTHER;
+
+        return null;
     }
 
-    private boolean shouldAllowShulkerInteraction(Player player) {
-        return !playerInteractions.containsKey(player.getUniqueId());
-    }
-
-
-    //MARK: - Private Enums
     private enum ItemClickType {
-        SHULKER_CLICK_TOP,
-        SHULKER_CLICK_BOTTOM,
-        OTHER,
-        DROP
+        SHULKER_CLICK_TOP, SHULKER_CLICK_BOTTOM, OTHER, DROP
     }
 
-    //MARK: - Constructor
     public InventoryEvents(ShulkceptionPlugin plugin) {
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
