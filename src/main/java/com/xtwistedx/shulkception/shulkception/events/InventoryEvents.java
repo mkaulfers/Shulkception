@@ -46,7 +46,7 @@ public class InventoryEvents implements Listener {
             return;
         }
 
-        ItemClickType itemClickType = getShulkerClickType(e);
+        ItemClickType itemClickType = getShulkerClickType(player, e);
 
         switch (itemClickType) {
             case OTHER:
@@ -214,7 +214,7 @@ public class InventoryEvents implements Listener {
      * @param e InventoryClickEvent
      * @return ItemClickType - Represents either a shulker box click top/bottom or other. If the item is not a shulker box, it will return OTHER.
      */
-    private ItemClickType getShulkerClickType(InventoryClickEvent e) {
+    private ItemClickType getShulkerClickType(Player player, InventoryClickEvent e) {
         if (e.getClick().equals(ClickType.DROP)) return ItemClickType.DROP;
 
         int topSize = e.getView().getTopInventory().getSize();
@@ -224,9 +224,13 @@ public class InventoryEvents implements Listener {
         if (item == null) return ItemClickType.OTHER;
         Material itemType = e.getCurrentItem().getType();
 
-        if (!isShulkerBox(itemType) || e.getClick() != ClickType.SHIFT_RIGHT) return ItemClickType.OTHER;
+        if ((!isShulkerBox(itemType) || e.getClick() != ClickType.SHIFT_RIGHT) && shouldAllowShulkerInteraction(player)) return ItemClickType.OTHER;
         if (topSize <= 5 && isShulkerBox(itemType) || (slot >= topSize && isShulkerBox(itemType))) return ItemClickType.SHULKER_CLICK_BOTTOM;
         return ItemClickType.SHULKER_CLICK_TOP;
+    }
+
+    private boolean shouldAllowShulkerInteraction(Player player) {
+        return !playerInteractions.containsKey(player.getUniqueId());
     }
 
 
